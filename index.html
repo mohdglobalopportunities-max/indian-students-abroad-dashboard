@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Indian Students Abroad (2020–2025) – Executive Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: radial-gradient(circle at top, #0c2f34, #020b0d);
+  color: #b9fff0;
+}
+h1,h2 { margin: 12px 20px; }
+.dashboard { padding: 20px; display: grid; grid-template-columns: 55% 45%; gap: 20px; }
+.card {
+  border: 1px solid #18ffd6;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 0 18px rgba(24,255,214,0.35);
+}
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 16px;
+  padding: 0 20px;
+}
+.kpi h3 { margin: 0; font-size: 14px; color:#7dfde0; }
+.kpi p { margin: 6px 0 0; font-size: 26px; font-weight: bold; }
+.slider { padding: 10px 20px; }
+canvas { background:#041417; border-radius:14px; padding:10px; }
+.country-list span { display:block; margin:6px 0; font-size:14px; }
+.footer { padding:12px 20px; font-size:12px; color:#88cfc0; }
+</style>
+</head>
+
+<body>
+
+<h1>Indian Students Studying Abroad (2020–2025)</h1>
+
+<div class="kpis">
+  <div class="card kpi">
+    <h3>Total Indian Students Abroad</h3>
+    <p id="total"></p>
+  </div>
+  <div class="card kpi">
+    <h3>YoY Growth</h3>
+    <p id="growth"></p>
+  </div>
+  <div class="card kpi">
+    <h3>Top Destination</h3>
+    <p id="top"></p>
+  </div>
+</div>
+
+<div class="slider">
+  <b>Select Year:</b>
+  <input type="range" min="2020" max="2025" step="1" value="2023" id="year">
+  <span id="yearLabel">2023</span>
+</div>
+
+<div class="dashboard">
+
+  <!-- LEFT -->
+  <div>
+    <div class="card">
+      <h2>India → Destination Countries (Numbers & %)</h2>
+      <div class="country-list" id="flow"></div>
+    </div>
+
+    <div class="card">
+      <h2>Trend: Indian Students by Country (2020–2025)</h2>
+      <canvas id="lineChart"></canvas>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div>
+    <div class="card">
+      <h2>Country-wise Share (%)</h2>
+      <canvas id="donutChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+Source: MEA India, UNESCO UIS, Open Doors (USA), IRCC Canada, HESA UK, Australian Dept. of Education, DAAD Germany, Education NZ.  
+2024–2025 figures are trend-based projections.
+</div>
+
+<script>
+const data = {
+2020:{USA:193000,Canada:170000,UK:84000,Australia:95000,Germany:34000,NZ:21000},
+2021:{USA:199000,Canada:183000,UK:93000,Australia:100000,Germany:36000,NZ:23000},
+2022:{USA:220000,Canada:180000,UK:120000,Australia:90000,Germany:60000,NZ:30000},
+2023:{USA:250000,Canada:220000,UK:135000,Australia:110000,Germany:70000,NZ:38000},
+2024:{USA:290000,Canada:240000,UK:150000,Australia:135000,Germany:80000,NZ:55000},
+2025:{USA:330000,Canada:260000,UK:170000,Australia:160000,Germany:95000,NZ:70000}
+};
+
+const countries = ["USA","Canada","UK","Australia","Germany","NZ"];
+
+const donut = new Chart(document.getElementById("donutChart"),{
+ type:"doughnut",
+ plugins:[ChartDataLabels],
+ data:{labels:countries,datasets:[{data:[],backgroundColor:[
+ "#00ffd5","#00c9ff","#ffd166","#ff9f1c","#cdb4db","#90dbf4"
+ ]}]},
+ options:{
+  plugins:{
+   datalabels:{
+    formatter:(v,ctx)=>{
+     let sum = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
+     return ((v/sum)*100).toFixed(1)+"%";
+    },
+    color:"#fff"
+   }
+  }
+ }
+});
+
+const line = new Chart(document.getElementById("lineChart"),{
+ type:"line",
+ data:{labels:Object.keys(data),datasets:countries.map((c,i)=>({
+   label:c,
+   data:Object.keys(data).map(y=>data[y][c]),
+   borderWidth:2,
+   fill:false
+ }))},
+ options:{responsive:true}
+});
+
+function update(year){
+ document.getElementById("yearLabel").innerText = year;
+ const d = data[year];
+ const total = Object.values(d).reduce((a,b)=>a+b,0);
+ document.getElementById("total").innerText = total.toLocaleString();
+
+ const prev = data[year-1];
+ document.getElementById("growth").innerText = prev ? (((total-Object.values(prev).reduce((a,b)=>a+b,0))/Object.values(prev).reduce((a,b)=>a+b,0)*100).toFixed(1)+"%"):"—";
+
+ const top = Object.keys(d).reduce((a,b)=>d[a]>d[b]?a:b);
+ document.getElementById("top").innerText = top;
+
+ document.getElementById("flow").innerHTML = countries.map(c=>
+ `<span>${c}: ${d[c].toLocaleString()} (${((d[c]/total)*100).toFixed(1)}%)</span>`
+ ).join("");
+
+ donut.data.datasets[0].data = countries.map(c=>d[c]);
+ donut.update();
+}
+
+document.getElementById("year").addEventListener("input",e=>update(e.target.value));
+update(2023);
+</script>
+
+</body>
+</html>
